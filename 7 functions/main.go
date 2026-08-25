@@ -33,8 +33,22 @@ func main() {
 
 	//Также функцию можно передавать в качестве параметра в другую функцию
 	// При этом, логично, мы не сможем записаь функцию ДРУГОГО типа в эту переменную
-	var multFunc func(int, int) int = selectFunc(2)
+	var multFunc = selectFunc(2)
 	fmt.Println(multFunc(2, 10000))
+
+	numInc := outerFunc()
+	fmt.Println(numInc())
+	fmt.Println(numInc())
+	fmt.Println(numInc())
+
+	certainMultiplier := multiplyByNum(5)
+	fmt.Println(certainMultiplier(1))
+	fmt.Println(certainMultiplier(2))
+	fmt.Println(certainMultiplier(3))
+	fmt.Println(certainMultiplier(4))
+
+	fmt.Println()
+	fmt.Println(factorial(5))
 }
 
 func inc(num int8) {
@@ -88,7 +102,7 @@ func selectFunc(n int8) func(int, int) int {
 	}
 }
 
-// Также можно возвращать анонимные функции
+// Также можно возвращать анонимные функции / лямбда функции
 // Также их можно присваивать в переменные и передавать в качестве аргумента
 // Как и все обычные функции
 func selectFuncAnon(n int8) func(int, int) int {
@@ -97,4 +111,24 @@ func selectFuncAnon(n int8) func(int, int) int {
 	} else {
 		return func(x, y int) int { return x * y }
 	}
+}
+
+func outerFunc() func() int {
+	num := 10
+	return func() int {
+		num++
+		return num
+	}
+}
+
+func multiplyByNum(num1 int) func(int) int {
+	return func(num2 int) int { return num1 * num2 }
+}
+
+func factorial(num int) int {
+	if num == 1 {
+		return 1
+	}
+
+	return num * factorial(num-1)
 }
