@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 )
 
 type employee struct {
@@ -22,13 +21,18 @@ func printEmployees(employees []employee) {
 	fmt.Println("Сотрудники")
 	for i, e := range employees {
 		num := i + 1
-		fmt.Println(strconv.Itoa(num) + ". " + e.getFullName() + ", возраст: " + strconv.Itoa(int(e.age)) + ", зарплата: " + strconv.Itoa(int(e.salary)))
+		fmt.Printf("%d. %s, возраст: %d, зарплата: %d\n", num, e.getFullName(), e.age, e.salary)
 	}
 }
 
+// Принимаем указатель на срез []employee
 func findEmployeeByName(employees *[]employee, firstName string) *employee {
 	for i := range *employees {
+		// Обращаемся по индексу к элементу среза
+		// А не через отдельную переменную
 		if (*employees)[i].firstName == firstName {
+			// Возврщааем ссылку на элемент ВСЕ ТОГО ЖЕ СРЕЗА
+			// Который мы передаем в ЭТУ функцию
 			return &(*employees)[i]
 		}
 	}
@@ -40,6 +44,9 @@ func increaseSalary(e *employee, percent uint) {
 }
 
 func getAverageSalary(employees []employee) int {
+	if len(employees) == 0 {
+		return 0
+	}
 	sum := 0
 	for _, e := range employees {
 		sum += int(e.salary)
@@ -47,11 +54,20 @@ func getAverageSalary(employees []employee) int {
 	return sum / len(employees)
 }
 
-func main() {
+func getOldestEmployee(employees *[]employee) *employee {
+	var oldestEmployee *employee = &(*employees)[0]
+	for i := range *employees {
+		if (*employees)[i].age > oldestEmployee.age {
+			oldestEmployee = &(*employees)[i]
+		}
+	}
+	return oldestEmployee
+}
 
-	alex := employee{"Alex", "Shmitd", 20, 20000}
-	sam := employee{"Sam", "Sulek", 30, 50000}
-	bob := employee{"Robert", "Pollson", 26, 5000}
+func main() {
+	alex := employee{"Alex", "Shmitd", 0, 20000}
+	sam := employee{"Sam", "Sulek", 10, 50000}
+	bob := employee{"Robert", "Pollson", 0, 5000}
 
 	employees := []employee{alex, sam, bob}
 	fmt.Println(employees[0].getFullName())
@@ -63,11 +79,11 @@ func main() {
 
 	foundEmployee := findEmployeeByName(&employees, "Sam")
 	if foundEmployee != nil {
-		// fmt.Println(foundEmployee, " adress of found employee")
 		fmt.Printf("%p\n", foundEmployee)
 		fmt.Printf("%p\n", &employees[1])
 		fmt.Println("*foundEmployee == sam ", foundEmployee == &employees[1])
 	}
+	foundEmployee.salary = 0
 	fmt.Println()
 
 	increaseSalary(&employees[1], 20)
@@ -77,4 +93,7 @@ func main() {
 	printEmployees(employees)
 	fmt.Println(getAverageSalary(employees), "average salary")
 
+	fmt.Println()
+	foundOldestEmployee := getOldestEmployee(&employees)
+	fmt.Println(foundOldestEmployee)
 }
