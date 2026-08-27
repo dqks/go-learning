@@ -25,49 +25,52 @@ func printEmployees(employees []employee) {
 	}
 }
 
-// Принимаем указатель на срез []employee
-func findEmployeeByName(employees *[]employee, firstName string) *employee {
-	for i := range *employees {
+// Принимаем срез []employee
+// Срез состоит из 3 элементов: указатель (ссылается на массив), длина и емкость
+// Копируется и указатель и длина и емкость
+// Но скопированный указатель указывает на все тотже массив, что и тот, который мы передаем в функцию
+// Т.е. чаще всего нет смысла передавать в функцию указатель на сам срез, а лучше просто передавать срез
+func findEmployeeByName(employees []employee, firstName string) *employee {
+	for i := range employees {
 		// Обращаемся по индексу к элементу среза
 		// А не через отдельную переменную
-		if (*employees)[i].firstName == firstName {
-			// Возврщааем ссылку на элемент ВСЕ ТОГО ЖЕ СРЕЗА
+		if employees[i].firstName == firstName {
+			// Возвращаем ссылку на элемент ВСЕ ТОГО ЖЕ СРЕЗА
 			// Который мы передаем в ЭТУ функцию
-			return &(*employees)[i]
+			return &employees[i]
 		}
 	}
 	return nil
 }
 
-func increaseSalary(e *employee, percent uint) {
-	e.salary = e.salary + (e.salary * percent / 100)
-}
-
-func getAverageSalary(employees []employee) int {
+func getAverageSalary(employees []employee) float64 {
 	if len(employees) == 0 {
 		return 0
 	}
-	sum := 0
+	var sum float64 = 0
 	for _, e := range employees {
-		sum += int(e.salary)
+		sum += float64(e.salary)
 	}
-	return sum / len(employees)
+	return sum / float64(len(employees))
 }
 
-func getOldestEmployee(employees *[]employee) *employee {
-	var oldestEmployee *employee = &(*employees)[0]
-	for i := range *employees {
-		if (*employees)[i].age > oldestEmployee.age {
-			oldestEmployee = &(*employees)[i]
+func getOldestEmployee(employees []employee) *employee {
+	if len(employees) == 0 {
+		return nil
+	}
+	oldestEmployee := &employees[0]
+	for i := 1; i < len(employees); i++ {
+		if employees[i].age > oldestEmployee.age {
+			oldestEmployee = &employees[i]
 		}
 	}
 	return oldestEmployee
 }
 
 func main() {
-	alex := employee{"Alex", "Shmitd", 0, 20000}
-	sam := employee{"Sam", "Sulek", 10, 50000}
-	bob := employee{"Robert", "Pollson", 0, 5000}
+	alex := employee{firstName: "Alex", lastName: "Shmitd", age: 0, salary: 11}
+	sam := employee{firstName: "Sam", lastName: "Sulek", age: 10, salary: 10}
+	bob := employee{firstName: "Robert", lastName: "Pollson", age: 0, salary: 10}
 
 	employees := []employee{alex, sam, bob}
 	fmt.Println(employees[0].getFullName())
@@ -77,23 +80,19 @@ func main() {
 	fmt.Println(employees[0])
 	fmt.Println()
 
-	foundEmployee := findEmployeeByName(&employees, "Sam")
+	foundEmployee := findEmployeeByName(employees, " ")
 	if foundEmployee != nil {
 		fmt.Printf("%p\n", foundEmployee)
 		fmt.Printf("%p\n", &employees[1])
 		fmt.Println("*foundEmployee == sam ", foundEmployee == &employees[1])
+		foundEmployee.salary = 0
 	}
-	foundEmployee.salary = 0
-	fmt.Println()
-
-	increaseSalary(&employees[1], 20)
-	fmt.Println(employees[1], " increased Sam's salary")
 	fmt.Println()
 
 	printEmployees(employees)
 	fmt.Println(getAverageSalary(employees), "average salary")
 
 	fmt.Println()
-	foundOldestEmployee := getOldestEmployee(&employees)
+	foundOldestEmployee := getOldestEmployee(employees)
 	fmt.Println(foundOldestEmployee)
 }
