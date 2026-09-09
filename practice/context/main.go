@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -14,16 +15,13 @@ type VirtualFile struct {
 	timeToProcess Millisecond
 }
 
-func ProcessFile(ctx context.Context, wg *sync.WaitGroup, file VirtualFile) {
+func ProcessFile(ctx context.Context, wg *sync.WaitGroup, file VirtualFile, resChan chan error) {
 	defer wg.Done()
 	select {
-	case file := <-fileHandler(file):
-		fmt.Println("Обработка файла ", file)
-		// Отправка данных в результирующий канал
-	case <-time.After(time.Second * 2):
-		fmt.Println("Таймаут, прошло 2 секунды")
+	case <-fileHandler(file):
+		resChan <- nil
 	case <-ctx.Done():
-		fmt.Println("Операция отменилась, таймаут")
+		resChan <- ctx.Err()
 	}
 }
 
@@ -42,7 +40,7 @@ func fileHandler(file VirtualFile) <-chan VirtualFile {
 }
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
 
 	files := []VirtualFile{
@@ -62,11 +60,31 @@ func main() {
 
 	var wg sync.WaitGroup
 	wg.Add(len(files))
-	// fileChan := make(chan VirtualFile, len(files))
+	resChan := make(chan error, len(files))
 
 	for i := range files {
-		go ProcessFile(ctx, &wg, files[i])
+		go ProcessFile(ctx, &wg, files[i], resChan)
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(resChan)
+	}()
+
+	completedSum := 0
+	canceledSum := 0
+	otherSum := 0
+	for res := range resChan {
+		if res == nil {
+			completedSum++
+		}
+		if errors.Is(res, context.Canceled) {
+			canceledSum++
+		}
+		if errors.Is(res, context.DeadlineExceeded) {
+			otherSum++
+		}
+	}
+
+	fmt.Printf("Завершено: %d\nОтменено: %d\nC другими ошибками: %d\n", completedSum, canceledSum, otherSum)
 }
