@@ -15,17 +15,17 @@ func NewFilledVirtualFiles() []*VirtualFile {
 	files := []*VirtualFile{
 		{
 			name:          "file1.txt",
-			timeToProcess: time.Duration(300 + rand.IntN(2700)),
+			timeToProcess: time.Duration(300 + rand.IntN(2701)),
 			processed:     false,
 		},
 		{
 			name:          "file2.txt",
-			timeToProcess: time.Duration(300 + rand.IntN(2700)),
+			timeToProcess: time.Duration(300 + rand.IntN(2701)),
 			processed:     false,
 		},
 		{
 			name:          "file3.txt",
-			timeToProcess: time.Duration(300 + rand.IntN(2700)),
+			timeToProcess: time.Duration(300 + rand.IntN(2701)),
 			processed:     false,
 		},
 	}

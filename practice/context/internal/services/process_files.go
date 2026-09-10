@@ -15,6 +15,10 @@ type processedFile struct {
 }
 
 func ProcessFiles(files []*file.VirtualFile) {
+	if len(files) == 0 {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
 
@@ -24,6 +28,9 @@ func ProcessFiles(files []*file.VirtualFile) {
 
 	for i := range files {
 		go fileHandler(ctx, &wg, files[i], resChan)
+		if files[i].TimeToProcess() > 2000 {
+			cancel()
+		}
 	}
 
 	go func() {
@@ -37,14 +44,14 @@ func ProcessFiles(files []*file.VirtualFile) {
 func fileHandler(ctx context.Context, wg *sync.WaitGroup, file *file.VirtualFile, resChan chan processedFile) {
 	defer wg.Done()
 	select {
-	case f := <-fileProcessor(ctx, wg, *file):
+	case f := <-fileProcessor(ctx, wg, file):
 		resChan <- f
 	case <-ctx.Done():
 		resChan <- processedFile{virtualFile: file, err: ctx.Err()}
 	}
 }
 
-func fileProcessor(ctx context.Context, wg *sync.WaitGroup, f file.VirtualFile) <-chan processedFile {
+func fileProcessor(ctx context.Context, wg *sync.WaitGroup, f *file.VirtualFile) <-chan processedFile {
 	result := make(chan processedFile, 1)
 
 	// 2. Затем мы в канал спустя time.Millisecond * timeToProcess
@@ -59,7 +66,7 @@ func fileProcessor(ctx context.Context, wg *sync.WaitGroup, f file.VirtualFile) 
 		case <-ctx.Done():
 		case <-time.After(time.Millisecond * f.TimeToProcess()):
 			f.SetProcessed(true)
-			result <- processedFile{virtualFile: &f, err: nil}
+			result <- processedFile{virtualFile: f, err: nil}
 		}
 	}()
 
@@ -78,7 +85,7 @@ func resultProcessor(res chan processedFile) {
 		if errors.Is(f.err, context.DeadlineExceeded) || errors.Is(f.err, context.Canceled) {
 			canceledSum++
 		}
-		if !errors.Is(f.err, context.DeadlineExceeded) && f.err != nil {
+		if !errors.Is(f.err, context.DeadlineExceeded) && !errors.Is(f.err, context.Canceled) && f.err != nil {
 			otherSum++
 		}
 		fmt.Printf("Файл %s со временм обработки %d\n", f.virtualFile.Name(), f.virtualFile.TimeToProcess())
