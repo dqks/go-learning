@@ -9,13 +9,18 @@ import (
 	"time"
 )
 
+type processedFile struct {
+	virtualFile *file.VirtualFile
+	err         error
+}
+
 func ProcessFiles(files []*file.VirtualFile) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
 
 	var wg sync.WaitGroup
-	wg.Add(len(files))
-	resChan := make(chan error, len(files))
+	wg.Add(len(files) * 2)
+	resChan := make(chan processedFile, len(files))
 
 	for i := range files {
 		go fileHandler(ctx, &wg, files[i], resChan)
@@ -29,44 +34,54 @@ func ProcessFiles(files []*file.VirtualFile) {
 	resultProcessor(resChan)
 }
 
-func fileHandler(ctx context.Context, wg *sync.WaitGroup, file *file.VirtualFile, resChan chan error) {
+func fileHandler(ctx context.Context, wg *sync.WaitGroup, file *file.VirtualFile, resChan chan processedFile) {
 	defer wg.Done()
 	select {
-	case <-fileProcessor(*file):
-		resChan <- nil
+	case f := <-fileProcessor(ctx, wg, *file):
+		resChan <- f
 	case <-ctx.Done():
-		resChan <- ctx.Err()
+		resChan <- processedFile{virtualFile: file, err: ctx.Err()}
 	}
 }
 
-func fileProcessor(f file.VirtualFile) <-chan file.VirtualFile {
-	result := make(chan file.VirtualFile, 1)
+func fileProcessor(ctx context.Context, wg *sync.WaitGroup, f file.VirtualFile) <-chan processedFile {
+	result := make(chan processedFile, 1)
 
 	// 2. Затем мы в канал спустя time.Millisecond * timeToProcess
-	// передадим в канал значение
+	// передадим значение
 	go func() {
-		time.Sleep(time.Millisecond * time.Duration(f.TimeToProcess))
-		result <- f
+		defer wg.Done()
+		// Для того, чтобы отменить горутину по истечению
+		// таймаута мы используем также и здесь select
+		// отслеживая ctx.Done()
+		// т.к. таймаут может истечь быстрее времени на выполнение
+		select {
+		case <-ctx.Done():
+		case <-time.After(time.Millisecond * f.TimeToProcess()):
+			f.SetProcessed(true)
+			result <- processedFile{virtualFile: &f, err: nil}
+		}
 	}()
 
 	// 1. Мы сначала вернем значение
 	return result
 }
 
-func resultProcessor(resChan chan error) {
+func resultProcessor(res chan processedFile) {
 	completedSum := 0
 	canceledSum := 0
 	otherSum := 0
-	for res := range resChan {
-		if res == nil {
+	for f := range res {
+		if f.err == nil {
 			completedSum++
 		}
-		if errors.Is(res, context.DeadlineExceeded) {
+		if errors.Is(f.err, context.DeadlineExceeded) || errors.Is(f.err, context.Canceled) {
 			canceledSum++
 		}
-		if !errors.Is(res, context.DeadlineExceeded) && res != nil {
+		if !errors.Is(f.err, context.DeadlineExceeded) && f.err != nil {
 			otherSum++
 		}
+		fmt.Printf("Файл %s со временм обработки %d\n", f.virtualFile.Name(), f.virtualFile.TimeToProcess())
 	}
 
 	fmt.Printf("Завершено: %d\nОтменено: %d\nC другими ошибками: %d\n", completedSum, canceledSum, otherSum)

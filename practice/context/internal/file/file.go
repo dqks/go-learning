@@ -1,30 +1,47 @@
 package file
 
 import (
+	"math/rand/v2"
 	"time"
 )
 
 type VirtualFile struct {
-	Name          string
-	TimeToProcess time.Duration
+	name          string
+	timeToProcess time.Duration
+	processed     bool
 }
 
 func NewFilledVirtualFiles() []*VirtualFile {
 	files := []*VirtualFile{
 		{
-			Name:          "file1.txt",
-			TimeToProcess: 1999,
+			name:          "file1.txt",
+			timeToProcess: time.Duration(300 + rand.IntN(2700)),
+			processed:     false,
 		},
 		{
-			Name:          "file2.txt",
-			TimeToProcess: 1000,
+			name:          "file2.txt",
+			timeToProcess: time.Duration(300 + rand.IntN(2700)),
+			processed:     false,
 		},
 		{
-			Name:          "file3.txt",
-			TimeToProcess: 3000,
+			name:          "file3.txt",
+			timeToProcess: time.Duration(300 + rand.IntN(2700)),
+			processed:     false,
 		},
 	}
 	return files
+}
+
+func (v VirtualFile) TimeToProcess() time.Duration {
+	return v.timeToProcess
+}
+
+func (v VirtualFile) Name() string {
+	return v.name
+}
+
+func (v *VirtualFile) SetProcessed(p bool) {
+	v.processed = p
 }
 
 // func NewVirtualFile(name string, timeToProcess time.Duration) (*VirtualFile, error) {
