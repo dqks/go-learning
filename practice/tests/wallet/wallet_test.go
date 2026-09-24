@@ -106,7 +106,7 @@ func TestDeposit(t *testing.T) {
 			w, err := wallet.NewWallet(tt.balance)
 
 			if err != nil {
-				t.Errorf("failed to create wallet %v", err)
+				t.Fatalf("failed to create wallet %v", err)
 			}
 
 			err = w.Deposit(tt.amount)
@@ -116,7 +116,7 @@ func TestDeposit(t *testing.T) {
 			}
 
 			if w.Balance() != tt.wantBalance {
-				t.Fatalf(
+				t.Errorf(
 					"got balance %d when deposit amount is %d instead of %d",
 					w.Balance(),
 					tt.amount,
@@ -299,15 +299,15 @@ func TestTransfer(t *testing.T) {
 			}
 
 			if walletFrom.Balance() != tt.wantBalanceFrom {
-				t.Fatalf(
+				t.Errorf(
 					"got result balanceFrom %d expected %d",
 					walletFrom.Balance(),
-					tt.balanceFrom,
+					tt.wantBalanceTo,
 				)
 			}
 
 			if walletTo.Balance() != tt.wantBalanceTo {
-				t.Fatalf(
+				t.Errorf(
 					"got result balanceTo %d expected %d",
 					walletTo.Balance(),
 					tt.wantBalanceTo,
