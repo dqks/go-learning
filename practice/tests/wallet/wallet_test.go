@@ -87,13 +87,13 @@ func TestDeposit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wallet, err := NewWallet(tt.balance)
+			wallet, _ := NewWallet(tt.balance)
+
+			err := wallet.Deposit(tt.amount)
 
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("got err %v when expected %v", err, tt.wantErr)
 			}
-
-			wallet.Deposit(tt.amount)
 
 			if wallet.Balance() != tt.wantBalance {
 				t.Fatalf(
@@ -156,13 +156,13 @@ func TestWithdraw(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wallet, err := NewWallet(tt.balance)
+			wallet, _ := NewWallet(tt.balance)
+
+			err := wallet.Withdraw(tt.amount)
 
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("got err %v when expected %v", err, tt.wantErr)
 			}
-
-			wallet.Withdraw(tt.amount)
 
 			if wallet.Balance() != tt.wantBalance {
 				t.Fatalf(
