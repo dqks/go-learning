@@ -10,27 +10,45 @@ func TestNewWallet(t *testing.T) {
 		name    string
 		balance int
 		wantErr error
+		wantNil bool
 	}{
 		{
 			name:    "positive balance",
 			balance: 1000,
 			wantErr: nil,
+			wantNil: false,
 		},
 		{
 			name:    "negative balance",
 			balance: -1000,
 			wantErr: ErrInvalidAmount,
+			wantNil: true,
 		},
 		{
 			name:    "zero balance",
 			balance: 0,
 			wantErr: nil,
+			wantNil: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wallet, err := NewWallet(tt.balance)
+
+			if (tt.wantNil && wallet != nil) || (!tt.wantNil && wallet == nil) {
+				if tt.wantNil {
+					t.Fatalf(
+						"got wallet %v when expected nil",
+						wallet,
+					)
+				} else {
+					t.Fatalf(
+						"got wallet %v when expected not nil",
+						wallet,
+					)
+				}
+			}
 
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf(
@@ -49,7 +67,6 @@ func TestNewWallet(t *testing.T) {
 				}
 
 			}
-
 		})
 	}
 }
@@ -89,11 +106,15 @@ func TestDeposit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			wallet, err := NewWallet(tt.balance)
 
+			if err != nil {
+				t.Fatalf("got err %v with balance %d", err, tt.balance)
+			}
+
+			err = wallet.Deposit(tt.amount)
+
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("got err %v when expected %v", err, tt.wantErr)
 			}
-
-			wallet.Deposit(tt.amount)
 
 			if wallet.Balance() != tt.wantBalance {
 				t.Fatalf(
@@ -158,15 +179,19 @@ func TestWithdraw(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			wallet, err := NewWallet(tt.balance)
 
+			if err != nil {
+				t.Fatalf("got err %v with balance %d", err, tt.balance)
+			}
+
+			err = wallet.Withdraw(tt.amount)
+
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("got err %v when expected %v", err, tt.wantErr)
 			}
 
-			wallet.Withdraw(tt.amount)
-
 			if wallet.Balance() != tt.wantBalance {
 				t.Fatalf(
-					"got balance %d when deposit amount is %d instead of %d",
+					"got balance %d when withdraw amount is %d instead of %d",
 					wallet.Balance(),
 					tt.amount,
 					tt.wantBalance,
