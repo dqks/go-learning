@@ -50,3 +50,18 @@ func (w *Wallet) Withdraw(amount int) error {
 func (w *Wallet) Balance() int {
 	return w.balance
 }
+
+func (w *Wallet) Transfer(to *Wallet, amount int) error {
+	if amount <= 0 {
+		return ErrInvalidAmount
+	}
+
+	if w.balance < amount {
+		return ErrInsufficientFunds
+	}
+
+	to.balance = to.balance + amount
+	w.balance = w.balance - amount
+
+	return nil
+}
